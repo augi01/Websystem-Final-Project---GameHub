@@ -6,8 +6,8 @@
     <title>Gamehub | Entertainment</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Lilita+One&family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="extras.css">
 </head>
 <body>
 
@@ -24,7 +24,7 @@
             </div>
         </div>
         <div class="wallet" id="ui-wallet">
-            <i class="ph-fill ph-coin"></i>
+            <i data-ico="coin"></i>
             <span id="ui-coins">0</span>
         </div>
     </header>
@@ -35,14 +35,16 @@
             <div class="hero">
                 <div class="hero-logo"><span>GAME</span><b>HUB</b></div>
                 <p>Play • Win • Collect</p>
-                <div class="hero-sprites">🏰 ⚔️ 🐉 🛡️ 👑</div>
+                <div class="hero-sprites">
+                    <i data-ico="crown"></i><i data-ico="sword"></i><i data-ico="chest"></i><i data-ico="gem"></i><i data-ico="key"></i>
+                </div>
             </div>
-            <h2 class="section-title">🎮 Arcade</h2>
+            <h2 class="section-title"><i data-ico="game"></i><span>Arcade</span></h2>
             <div class="games-grid" id="games-grid"></div>
         </section>
 
         <section id="view-leaderboard" class="view-section">
-            <h2 class="section-title">🏆 Rankings</h2>
+            <h2 class="section-title"><i data-ico="trophy"></i><span>Rankings</span></h2>
             <div class="chips" id="leaderboard-tabs"></div>
             <div id="leaderboard-list">
                 <p class="empty-note">Fetching top players...</p>
@@ -50,19 +52,22 @@
         </section>
 
         <section id="view-store" class="view-section">
-            <h2 class="section-title">🛍️ Store</h2>
+            <h2 class="section-title"><i data-ico="basket"></i><span>Store</span></h2>
             <div id="store-list"></div>
         </section>
 
         <section id="view-missions" class="view-section">
-            <h2 class="section-title">🎯 Missions</h2>
+            <h2 class="section-title"><i data-ico="scroll"></i><span>Missions</span></h2>
             <p class="section-sub" id="missions-summary">Resets every day at midnight</p>
             <div id="missions-list"></div>
         </section>
 
         <section id="view-profile" class="view-section">
-            <h2 class="section-title">😎 Profile</h2>
+            <h2 class="section-title"><i data-ico="face"></i><span>Profile</span></h2>
             <div id="profile-stats"></div>
+            <h3 class="sub-title">Equipped Badges <span id="badges-count" class="count-pill">0/3</span></h3>
+            <div class="badge-showcase" id="profile-badges"></div>
+            <p class="showcase-total" id="badges-total"></p>
             <h3 class="sub-title">Personal Bests</h3>
             <div id="profile-bests"></div>
             <h3 class="sub-title">Achievements <span id="achievements-count" class="count-pill">0/0</span></h3>
@@ -74,23 +79,23 @@
     <!-- BOTTOM NAVIGATION -->
     <nav>
         <a class="nav-item active" onclick="switchTab('view-games', this)">
-            <i class="ph-fill ph-game-controller"></i>
+            <i data-ico="game"></i>
             <span>Games</span>
         </a>
         <a class="nav-item" onclick="switchTab('view-leaderboard', this)">
-            <i class="ph-fill ph-trophy"></i>
+            <i data-ico="trophy"></i>
             <span>Rank</span>
         </a>
         <a class="nav-item" onclick="switchTab('view-store', this)">
-            <i class="ph-fill ph-storefront"></i>
+            <i data-ico="basket"></i>
             <span>Store</span>
         </a>
         <a class="nav-item" onclick="switchTab('view-missions', this)">
-            <i class="ph-fill ph-target"></i>
+            <i data-ico="scroll"></i>
             <span>Tasks</span>
         </a>
         <a class="nav-item" onclick="switchTab('view-profile', this)">
-            <i class="ph-fill ph-user"></i>
+            <i data-ico="face"></i>
             <span>Profile</span>
         </a>
     </nav>
@@ -98,7 +103,7 @@
     <!-- WELCOME MODAL -->
     <div id="welcome-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-emoji">🏰</div>
+            <div class="modal-emoji"><i data-ico="crown"></i></div>
             <h3>Welcome to Gamehub</h3>
             <p>Enter your player name to start your arcade journey.</p>
             <input type="text" id="username-input" placeholder="e.g. PlayerOne" maxlength="12" autocomplete="off">
@@ -110,7 +115,7 @@
     <section id="view-active-game" class="game-overlay">
         <header class="game-header">
             <button class="btn-icon" onclick="closeGame()">
-                <i class="ph ph-arrow-left"></i> Back
+                <i data-ico="arrowup" data-ico-class="rot-left"></i> Back
             </button>
             <h3 id="active-game-title">Game Title</h3>
             <div style="width: 70px;"></div>
@@ -119,6 +124,7 @@
     </section>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="icons.js"></script>
     <script src="games.js"></script>
     <script src="app.js"></script>
 </body>

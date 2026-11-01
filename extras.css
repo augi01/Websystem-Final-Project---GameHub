@@ -1,0 +1,142 @@
+/* =========================================
+   EXTRAS: icons, badges, store badge grid, profile showcase
+   Loaded after styles.css
+   ========================================= */
+
+/* ---------- Icons ---------- */
+.ico { width: 1em; height: 1em; display: inline-block; vertical-align: -0.16em; flex: none; overflow: visible; }
+.ico.flip { transform: rotate(180deg); }
+.ico.rot-left { transform: rotate(-90deg); }
+i[data-ico] { display: inline-flex; align-items: center; justify-content: center; font-style: normal; line-height: 0; flex: none; }
+
+.wallet i { font-size: 1.5rem; }
+.section-title i { font-size: 1.8rem; }
+.btn-icon i { font-size: 1.3rem; }
+.hero-sprites { display: flex; justify-content: center; gap: 14px; letter-spacing: 0; }
+.hero-sprites i { font-size: 2.1rem; }
+.store-section-title { display: flex; align-items: center; gap: 8px; }
+.store-section-title .ico { font-size: 1.5rem; }
+.chip .ico { font-size: 1.25em; margin-right: 2px; }
+.rank-pos .ico { font-size: 1.7rem; }
+.game-header h3 .ico { font-size: 1.3em; margin-right: 4px; }
+.game-info .ico, .game-hint .ico, .gn-feedback .ico, .tv-top .ico { font-size: 1.25em; }
+.hearts .ico { margin: 0 2px; }
+.gn-chip .ico { font-size: 1.15em; }
+.ttt-cell .ico { font-size: 1.7em; }
+.mem-face .ico { font-size: 1.6em; }
+.game-hint .fb-dot { display: inline-block; vertical-align: middle; margin: 0 2px; }
+.heat-hot { color: #E4533F; }
+.heat-warm { color: #F58A2E; }
+.heat-cool { color: #3FA7E0; }
+.heat-cold { color: #5B7FC4; }
+.ach-reward .ico, .mission-reward .ico { font-size: 1.1em; }
+
+/* ---------- Badge images (the creature art) ---------- */
+.badge-img {
+    width: 28px;
+    height: 28px;
+    flex: none;
+    display: block;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid var(--wood-dark);
+    background: #FEFCE5;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+    user-select: none;
+    -webkit-user-drag: none;
+}
+.badge-img.sm { width: 22px; height: 22px; border-radius: 6px; box-shadow: none; }
+.badge-img.lg { width: 68px; height: 68px; border-radius: 14px; border-width: 3px; box-shadow: 0 3px 0 var(--wood-dark); }
+
+#ui-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; vertical-align: middle; }
+
+/* ---------- Leaderboard: badges to the right of the name ---------- */
+.rank-name { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
+.rank-name h4 { min-width: 0; max-width: 100%; }
+.rank-badges { display: flex; align-items: center; gap: 4px; flex: none; }
+.rank-badges .badge-img { width: 24px; height: 24px; border-radius: 7px; box-shadow: none; }
+.badge-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 24px;
+    padding: 0 8px 0 5px;
+    border-radius: 12px;
+    background: var(--wood);
+    color: var(--cream);
+    border: 2px solid var(--wood-dark);
+    font-family: 'Lilita One', sans-serif;
+    font-size: 0.78rem;
+}
+.badge-count .ico { font-size: 1.05rem; }
+
+/* ---------- Store: badge grid ---------- */
+.badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.badge-card {
+    background: var(--paper-light);
+    border: 3px solid var(--paper-dark);
+    border-radius: var(--radius-md);
+    padding: 8px 6px 10px;
+    text-align: center;
+    box-shadow: 0 3px 0 var(--paper-dark);
+}
+.badge-card.owned { border-color: var(--green-dark); box-shadow: 0 3px 0 var(--green-dark); }
+.badge-card .badge-img { width: 72px; height: 72px; margin: 0 auto 6px; border-radius: 14px; border-width: 3px; box-shadow: 0 3px 0 var(--wood-dark); }
+.badge-card h4 { font-family: 'Lilita One', sans-serif; font-weight: 400; font-size: 0.85rem; line-height: 1.15; }
+.badge-card .tier { margin-bottom: 6px; }
+.badge-card .btn-small { margin-top: 8px; }
+
+.tier {
+    display: inline-block;
+    padding: 1px 9px;
+    border-radius: 10px;
+    border: 2px solid var(--wood-dark);
+    font-family: 'Lilita One', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #fff;
+}
+.tier-common { background: #9AA3AE; }
+.tier-rare { background: #3FA7E0; }
+.tier-epic { background: #9B6BDF; }
+.tier-legendary { background: linear-gradient(180deg, #FFD84D, #F5A800); color: #3B2400; }
+
+/* ---------- Profile: equipped badge showcase ---------- */
+.badge-showcase { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.showcase-slot {
+    background: var(--paper-light);
+    border: 3px solid var(--paper-dark);
+    border-radius: var(--radius-md);
+    padding: 10px 6px;
+    min-height: 130px;
+    text-align: center;
+    box-shadow: 0 3px 0 var(--paper-dark);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.showcase-slot h4 { font-family: 'Lilita One', sans-serif; font-weight: 400; font-size: 0.85rem; line-height: 1.1; }
+.showcase-slot.empty { border-style: dashed; opacity: 0.7; }
+.showcase-slot.empty .ico { font-size: 2rem; opacity: 0.5; filter: grayscale(100%); }
+.showcase-slot.empty small { font-size: 0.75rem; font-weight: 800; color: var(--ink-soft); }
+.showcase-total { margin-top: 10px; text-align: center; font-size: 0.85rem; font-weight: 800; color: var(--ink-soft); }
+
+/* =========================================
+   DESKTOP (900px and wider)
+   ========================================= */
+@media (min-width: 900px) {
+    .section-title i { font-size: 2rem; }
+    .hero-sprites { gap: 20px; }
+    .hero-sprites i { font-size: 2.8rem; }
+    .badge-img.sm { width: 26px; height: 26px; }
+    .badge-img.lg { width: 84px; height: 84px; }
+    .rank-badges .badge-img { width: 32px; height: 32px; border-radius: 9px; }
+    .badge-count { height: 30px; font-size: 0.85rem; }
+    .badge-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px; }
+    .badge-card .badge-img { width: 92px; height: 92px; }
+    .badge-card h4 { font-size: 0.95rem; }
+    .badge-showcase { max-width: 660px; gap: 16px; }
+}

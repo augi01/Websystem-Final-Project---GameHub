@@ -19,59 +19,78 @@ try {
 
 // ==========================================
 // 1. GAME CONFIG (edit these to add content)
+// Icon names come from icons.js
 // ==========================================
 const SAVED_NAME_KEY = "gamehub_username";
+const MAX_BADGES = 3; // how many badges a player can show at once
 
 // gain(ctx) = how much progress a finished game adds.
 // ctx = { gameId, score, win, extra, xp, coins }
 const MISSIONS = [
-    { id: "play3",         icon: "🎮", title: "Play 3 games",                    target: 3,   reward: 50,  gain: () => 1 },
-    { id: "play8",         icon: "🔥", title: "Play 8 games",                    target: 8,   reward: 120, gain: () => 1 },
-    { id: "win1",          icon: "🏆", title: "Win a game",                      target: 1,   reward: 30,  gain: c => (c.win ? 1 : 0) },
-    { id: "win4",          icon: "👑", title: "Win 4 games",                     target: 4,   reward: 90,  gain: c => (c.win ? 1 : 0) },
-    { id: "win_tictactoe", icon: "❌", title: "Win Tic-Tac-Toe",                 target: 1,   reward: 30,  gain: c => (c.gameId === "tictactoe" && c.win ? 1 : 0) },
-    { id: "guess_win",     icon: "🔢", title: "Win Guess Number",                target: 1,   reward: 40,  gain: c => (c.gameId === "guessnumber" && c.win ? 1 : 0) },
-    { id: "memory_done",   icon: "🃏", title: "Finish Matching Cards",           target: 1,   reward: 40,  gain: c => (c.gameId === "matching" && c.win ? 1 : 0) },
-    { id: "reaction_fast", icon: "⚡", title: "Average under 400ms in Reaction", target: 1,   reward: 60,  gain: c => (c.gameId === "reaction" && c.extra.avg && c.extra.avg < 400 ? 1 : 0) },
-    { id: "code_crack",    icon: "🔐", title: "Crack the secret code",           target: 1,   reward: 50,  gain: c => (c.gameId === "codebreaker" && c.win ? 1 : 0) },
-    { id: "trivia5",       icon: "🧠", title: "Get 5 trivia answers right",      target: 5,   reward: 50,  gain: c => (c.gameId === "trivia" ? (c.extra.correct || 0) : 0) },
-    { id: "score500",      icon: "💯", title: "Score 500+ in one game",          target: 1,   reward: 70,  gain: c => (c.score >= 500 ? 1 : 0) },
-    { id: "xp200",         icon: "⭐", title: "Earn 200 XP today",               target: 200, reward: 80,  gain: c => c.xp }
+    { id: "play3",         icon: "game",  title: "Play 3 games",                    target: 3,   reward: 50,  gain: () => 1 },
+    { id: "play8",         icon: "fire",  title: "Play 8 games",                    target: 8,   reward: 120, gain: () => 1 },
+    { id: "win1",          icon: "trophy", title: "Win a game",                     target: 1,   reward: 30,  gain: c => (c.win ? 1 : 0) },
+    { id: "win4",          icon: "crown", title: "Win 4 games",                     target: 4,   reward: 90,  gain: c => (c.win ? 1 : 0) },
+    { id: "win_tictactoe", icon: "cross", title: "Win Tic-Tac-Toe",                 target: 1,   reward: 30,  gain: c => (c.gameId === "tictactoe" && c.win ? 1 : 0) },
+    { id: "guess_win",     icon: "dice",  title: "Win Guess Number",                target: 1,   reward: 40,  gain: c => (c.gameId === "guessnumber" && c.win ? 1 : 0) },
+    { id: "memory_done",   icon: "cards", title: "Finish Matching Cards",           target: 1,   reward: 40,  gain: c => (c.gameId === "matching" && c.win ? 1 : 0) },
+    { id: "reaction_fast", icon: "bolt",  title: "Average under 400ms in Reaction", target: 1,   reward: 60,  gain: c => (c.gameId === "reaction" && c.extra.avg && c.extra.avg < 400 ? 1 : 0) },
+    { id: "code_crack",    icon: "key",   title: "Crack the secret code",           target: 1,   reward: 50,  gain: c => (c.gameId === "codebreaker" && c.win ? 1 : 0) },
+    { id: "trivia5",       icon: "orb",   title: "Get 5 trivia answers right",      target: 5,   reward: 50,  gain: c => (c.gameId === "trivia" ? (c.extra.correct || 0) : 0) },
+    { id: "score500",      icon: "gem",   title: "Score 500+ in one game",          target: 1,   reward: 70,  gain: c => (c.score >= 500 ? 1 : 0) },
+    { id: "xp200",         icon: "star",  title: "Earn 200 XP today",               target: 200, reward: 80,  gain: c => c.xp }
 ];
 
 // test(ctx) returns true once earned. ctx is null outside of a finished game.
 const ACHIEVEMENTS = [
-    { id: "first_win",   icon: "🏅", name: "First Win",           desc: "Win your first game",                  reward: 50,  test: () => currentPlayer.wins >= 1 },
-    { id: "wins_10",     icon: "🥇", name: "Champion",            desc: "Win 10 games",                         reward: 150, test: () => currentPlayer.wins >= 10 },
-    { id: "wins_25",     icon: "💪", name: "Unstoppable",         desc: "Win 25 games",                         reward: 300, test: () => currentPlayer.wins >= 25 },
-    { id: "veteran",     icon: "🎖️", name: "Arcade Veteran",      desc: "Play 10 games",                        reward: 100, test: () => currentPlayer.games_played >= 10 },
-    { id: "games_50",    icon: "🕹️", name: "Arcade Legend",       desc: "Play 50 games",                        reward: 300, test: () => currentPlayer.games_played >= 50 },
-    { id: "lvl3",        icon: "🌟", name: "Rising Star",         desc: "Reach Level 3",                        reward: 150, test: () => currentPlayer.level >= 3 },
-    { id: "lvl5",        icon: "🚀", name: "High Flyer",          desc: "Reach Level 5",                        reward: 250, test: () => currentPlayer.level >= 5 },
-    { id: "lvl10",       icon: "💎", name: "Elite",               desc: "Reach Level 10",                       reward: 600, test: () => currentPlayer.level >= 10 },
-    { id: "xp_1000",     icon: "⚡", name: "XP Hunter",           desc: "Gain 1000 XP",                         reward: 200, test: () => currentPlayer.xp >= 1000 },
-    { id: "xp_5000",     icon: "🌋", name: "XP Master",           desc: "Gain 5000 XP",                         reward: 800, test: () => currentPlayer.xp >= 5000 },
-    { id: "coins_500",   icon: "🐷", name: "Piggy Bank",          desc: "Hold 500 coins at once",               reward: 100, test: () => currentPlayer.coins >= 500 },
-    { id: "shopper",     icon: "🛍️", name: "Shopper",             desc: "Buy your first item",                  reward: 25,  test: () => ownedItems.size >= 1 },
-    { id: "collector",   icon: "🎁", name: "Collector",           desc: "Own 5 store items",                    reward: 200, test: () => ownedItems.size >= 5 },
-    { id: "explorer",    icon: "🧭", name: "Explorer",            desc: "Play all 6 games",                     reward: 250, test: () => playedGames.size >= Object.keys(GAME_LIST).length },
-    { id: "ttt_pro",     icon: "❌", name: "Tic-Tac-Pro",         desc: "Win Tic-Tac-Toe in just 3 moves",      reward: 100, test: c => !!c && c.gameId === "tictactoe" && c.win && c.extra.moves === 3 },
-    { id: "mind_reader", icon: "🔮", name: "Mind Reader",         desc: "Guess the number in 4 tries or fewer", reward: 150, test: c => !!c && c.gameId === "guessnumber" && c.win && c.extra.attempts <= 4 },
-    { id: "photographic",icon: "📸", name: "Photographic Memory", desc: "Finish Matching in 12 moves or fewer", reward: 200, test: c => !!c && c.gameId === "matching" && c.win && c.extra.moves <= 12 },
-    { id: "lightning",   icon: "🌩️", name: "Lightning Reflexes",  desc: "Average under 300ms in Reaction Rush", reward: 200, test: c => !!c && c.gameId === "reaction" && c.extra.avg && c.extra.avg < 300 },
-    { id: "cracker",     icon: "🕵️", name: "Master Cracker",      desc: "Crack the code in 3 tries or fewer",   reward: 200, test: c => !!c && c.gameId === "codebreaker" && c.win && c.extra.attempts <= 3 },
-    { id: "genius",      icon: "🎓", name: "Trivia Genius",       desc: "Answer every trivia question right",   reward: 250, test: c => !!c && c.gameId === "trivia" && c.extra.correct === c.extra.total },
-    { id: "high_roller", icon: "🎰", name: "High Roller",         desc: "Score 800+ in a single game",          reward: 150, test: c => !!c && c.score >= 800 },
-    { id: "daily_champ", icon: "📅", name: "Daily Champion",      desc: "Claim every daily mission in a day",   reward: 300, test: () => MISSIONS.every(m => missionState[m.id] && missionState[m.id].claimed) }
+    { id: "first_win",   icon: "medal",   name: "First Win",           desc: "Win your first game",                  reward: 50,  test: () => currentPlayer.wins >= 1 },
+    { id: "wins_10",     icon: "trophy",  name: "Champion",            desc: "Win 10 games",                         reward: 150, test: () => currentPlayer.wins >= 10 },
+    { id: "wins_25",     icon: "sword",   name: "Unstoppable",         desc: "Win 25 games",                         reward: 300, test: () => currentPlayer.wins >= 25 },
+    { id: "veteran",     icon: "game",    name: "Arcade Veteran",      desc: "Play 10 games",                        reward: 100, test: () => currentPlayer.games_played >= 10 },
+    { id: "games_50",    icon: "fire",    name: "Arcade Legend",       desc: "Play 50 games",                        reward: 300, test: () => currentPlayer.games_played >= 50 },
+    { id: "lvl3",        icon: "star",    name: "Rising Star",         desc: "Reach Level 3",                        reward: 150, test: () => currentPlayer.level >= 3 },
+    { id: "lvl5",        icon: "arrowup", name: "High Flyer",          desc: "Reach Level 5",                        reward: 250, test: () => currentPlayer.level >= 5 },
+    { id: "lvl10",       icon: "gem",     name: "Elite",               desc: "Reach Level 10",                       reward: 600, test: () => currentPlayer.level >= 10 },
+    { id: "xp_1000",     icon: "bolt",    name: "XP Hunter",           desc: "Gain 1000 XP",                         reward: 200, test: () => currentPlayer.xp >= 1000 },
+    { id: "xp_5000",     icon: "crown",   name: "XP Master",           desc: "Gain 5000 XP",                         reward: 800, test: () => currentPlayer.xp >= 5000 },
+    { id: "coins_500",   icon: "cash",    name: "Piggy Bank",          desc: "Hold 500 coins at once",               reward: 100, test: () => currentPlayer.coins >= 500 },
+    { id: "shopper",     icon: "basket",  name: "Shopper",             desc: "Buy your first item",                  reward: 25,  test: () => ownedItems.size >= 1 },
+    { id: "collector",   icon: "chest",   name: "Collector",           desc: "Own 5 store items",                    reward: 200, test: () => ownedItems.size >= 5 },
+    { id: "explorer",    icon: "map",     name: "Explorer",            desc: "Play all 6 games",                     reward: 250, test: () => playedGames.size >= Object.keys(GAME_LIST).length },
+    { id: "ttt_pro",     icon: "cross",   name: "Tic-Tac-Pro",         desc: "Win Tic-Tac-Toe in just 3 moves",      reward: 100, test: c => !!c && c.gameId === "tictactoe" && c.win && c.extra.moves === 3 },
+    { id: "mind_reader", icon: "orb",     name: "Mind Reader",         desc: "Guess the number in 4 tries or fewer", reward: 150, test: c => !!c && c.gameId === "guessnumber" && c.win && c.extra.attempts <= 4 },
+    { id: "photographic",icon: "cards",   name: "Photographic Memory", desc: "Finish Matching in 12 moves or fewer", reward: 200, test: c => !!c && c.gameId === "matching" && c.win && c.extra.moves <= 12 },
+    { id: "lightning",   icon: "bolt",    name: "Lightning Reflexes",  desc: "Average under 300ms in Reaction Rush", reward: 200, test: c => !!c && c.gameId === "reaction" && c.extra.avg && c.extra.avg < 300 },
+    { id: "cracker",     icon: "key",     name: "Master Cracker",      desc: "Crack the code in 3 tries or fewer",   reward: 200, test: c => !!c && c.gameId === "codebreaker" && c.win && c.extra.attempts <= 3 },
+    { id: "genius",      icon: "orb",     name: "Trivia Genius",       desc: "Answer every trivia question right",   reward: 250, test: c => !!c && c.gameId === "trivia" && c.extra.correct === c.extra.total },
+    { id: "high_roller", icon: "dice",    name: "High Roller",         desc: "Score 800+ in a single game",          reward: 150, test: c => !!c && c.score >= 800 },
+    { id: "daily_champ", icon: "scroll",  name: "Daily Champion",      desc: "Claim every daily mission in a day",   reward: 300, test: () => MISSIONS.every(m => missionState[m.id] && missionState[m.id].claimed) }
 ];
 
 // slot: name | frame | badge | theme.  css = class (or theme name) it applies.
 const STORE_SECTIONS = [
-    { slot: "name",  title: "🎨 Name Colors" },
-    { slot: "frame", title: "🖼️ Avatar Frames" },
-    { slot: "badge", title: "🏅 Badges" },
-    { slot: "theme", title: "🌈 App Themes" }
+    { slot: "name",  title: "Name Colors",    icon: "star" },
+    { slot: "frame", title: "Avatar Frames",  icon: "medal" },
+    { slot: "badge", title: "Badges",         icon: "gem" },
+    { slot: "theme", title: "App Themes",     icon: "orb" }
 ];
+
+// Badges = the 32 creature images in the /badges folder (b01.webp ... b32.webp).
+// [name, price]. The order matches the image numbers.
+const BADGE_DEFS = [
+    ["Stone Guard", 400],   ["Victory Ears", 1800], ["Sun Bloom", 250],    ["Night Beak", 300],
+    ["Ember Chick", 150],   ["Lily Hat", 200],      ["Grin Brawler", 250], ["Pond Sprite", 150],
+    ["Dream Puff", 500],    ["Honey Trio", 350],    ["Sky Chirp", 200],    ["Panda Punk", 700],
+    ["Grumpy Moss", 100],   ["Wood Eye", 150],      ["Snow Bunny", 450],   ["Leaf Sprout", 100],
+    ["Flame Pup", 400],     ["Deep Roar", 600],     ["Grumpy Bear", 800],  ["Cactus Pal", 350],
+    ["Sand Armor", 300],    ["Patch Balloon", 500], ["Cotton Cloud", 900], ["Spark Mouse", 1200],
+    ["Frost Hood", 450],    ["Red Peeper", 250],    ["Spike Crab", 1000],  ["Horn Blob", 600],
+    ["Cheeky Bear", 200],   ["Wish Star", 2500],    ["Bored Leaf", 150],   ["Teal Swoop", 1500]
+];
+const BADGE_ITEMS = BADGE_DEFS.map(([name, price], i) => {
+    const n = String(i + 1).padStart(2, "0");
+    return { id: "badge_" + n, slot: "badge", name, price, img: "badges/b" + n + ".webp" };
+});
 
 const STORE_ITEMS = [
     { id: "neon_red",       slot: "name",  name: "Neon Red Name",   price: 300,  css: "name-red" },
@@ -85,11 +104,7 @@ const STORE_ITEMS = [
     { id: "ice_frame",      slot: "frame", name: "Ice Frame",       price: 450,  css: "frame-ice" },
     { id: "rainbow_frame",  slot: "frame", name: "Rainbow Frame",   price: 1200, css: "frame-rainbow" },
 
-    { id: "badge_star",     slot: "badge", name: "Star Badge",      price: 150,  emoji: "⭐" },
-    { id: "badge_fire",     slot: "badge", name: "Fire Badge",      price: 200,  emoji: "🔥" },
-    { id: "badge_alien",    slot: "badge", name: "Alien Badge",     price: 300,  emoji: "👽" },
-    { id: "badge_crown",    slot: "badge", name: "Crown Badge",     price: 600,  emoji: "👑" },
-    { id: "badge_dragon",   slot: "badge", name: "Dragon Badge",    price: 900,  emoji: "🐉" },
+    ...BADGE_ITEMS,
 
     { id: "theme_ocean",    slot: "theme", name: "Ocean Theme",     price: 500,  css: "ocean",  swatch: "linear-gradient(135deg,#0EA5E9,#22D3EE)" },
     { id: "theme_sunset",   slot: "theme", name: "Sunset Theme",    price: 500,  css: "sunset", swatch: "linear-gradient(135deg,#FB7185,#FBBF24)" },
@@ -104,7 +119,7 @@ const STORE_ITEMS = [
 let currentPlayer = null;
 let unlockedAchievements = new Set();
 let ownedItems = new Set();
-let equipped = { name: null, frame: null, badge: null, theme: null };
+let equipped = { name: null, frame: null, theme: null, badges: [] };
 let missionState = {};
 let missionDate = null;
 let bestScores = {};
@@ -137,6 +152,33 @@ function gameIdByName(name) {
     return Object.keys(GAME_LIST).find(id => GAME_LIST[id].name === name) || null;
 }
 
+// ----- Badge helpers -----
+function badgeTier(price) {
+    if (price >= 1500) return { id: "legendary", label: "Legendary" };
+    if (price >= 700) return { id: "epic", label: "Epic" };
+    if (price >= 300) return { id: "rare", label: "Rare" };
+    return { id: "common", label: "Common" };
+}
+
+function badgeImg(it, size = "") {
+    return `<img class="badge-img ${size}" src="${it.img}" alt="${escapeHtml(it.name)}" title="${escapeHtml(it.name)}" loading="lazy" draggable="false">`;
+}
+
+function ownedBadgeCount() {
+    return BADGE_ITEMS.filter(b => ownedItems.has(b.id)).length;
+}
+
+// Badges + collected count shown to the right of a player's name on the leaderboard
+function badgesHtml(eq) {
+    if (!eq || typeof eq !== "object") return "";
+    const ids = Array.isArray(eq.badges) ? eq.badges : [];
+    const imgs = ids.map(id => itemById(id)).filter(it => it && it.slot === "badge")
+        .slice(0, MAX_BADGES).map(it => badgeImg(it)).join("");
+    const count = Number(eq.badgeCount) || 0;
+    const pill = count > 0 ? `<span class="badge-count" title="${count} badges collected">${ico("gem")} ${count}</span>` : "";
+    return imgs || pill ? `<span class="rank-badges">${imgs}${pill}</span>` : "";
+}
+
 // ==========================================
 // 3. STARTUP
 // ==========================================
@@ -159,26 +201,31 @@ function showFatal(msg) {
 document.addEventListener("DOMContentLoaded", async () => {
     let savedName = null;
     try { savedName = localStorage.getItem(SAVED_NAME_KEY); } catch (e) {}
-    
+
     // Show the name popup FIRST, so a problem further down can never hide it
     if (!savedName || !db) showWelcomeModal();
     if (!db) showFatal("Could not load the Supabase library. Check your internet connection.");
-    
+
     if (typeof GAME_LIST === "undefined") {
         showFatal("games.js did not load. Make sure the file is named exactly games.js and is in the same folder as index.html on Vercel.");
         return;
     }
-    
+
+    if (typeof ico === "undefined") {
+        showFatal("icons.js did not load. Make sure icons.js is in the same folder as index.html on Vercel.");
+        return;
+    }
+
     if (!document.getElementById("games-grid")) {
         showFatal("index.html is the old version. Replace it with the new one and redeploy.");
         return;
     }
-    
+
     const on = (id, evt, fn) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener(evt, fn);
     };
-    
+
     on("username-input", "keydown", e => { if (e.key === "Enter") registerNewPlayer(); });
     on("games-grid", "click", e => {
         const card = e.target.closest("[data-game]");
@@ -199,7 +246,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         else if (b.dataset.action === "equip") equipItem(id);
         else if (b.dataset.action === "unequip") unequipItem(id);
     });
-    
+
     try {
         renderGames();
         renderLeaderboardTabs();
@@ -210,7 +257,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.error(err);
         showFatal("Startup error: " + err.message);
     }
-    
+
     if (savedName && db) {
         try {
             const ok = await loginPlayer(savedName, true);
@@ -310,7 +357,8 @@ async function loadInventory() {
     try {
         const { data, error } = await db.from("player_inventory").select("item_id").eq("player_id", currentPlayer.id);
         if (error) throw error;
-        (data || []).forEach(r => ownedItems.add(r.item_id));
+        // Only count items that still exist in the store (old emoji badges are gone)
+        (data || []).forEach(r => { if (itemById(r.item_id)) ownedItems.add(r.item_id); });
     } catch (err) { console.error("Load inventory error:", err); }
 }
 
@@ -358,10 +406,16 @@ function loadEquipped(profile) {
     if (!eq || Object.keys(eq).length === 0) {
         try { eq = JSON.parse(localStorage.getItem("gamehub_equipped_" + currentPlayer.username) || "null"); } catch (e) { eq = null; }
     }
-    equipped = { name: null, frame: null, badge: null, theme: null, ...(eq || {}) };
-    Object.keys(equipped).forEach(slot => {
-        if (equipped[slot] && !ownedItems.has(equipped[slot])) equipped[slot] = null;
-    });
+    eq = eq || {};
+    const ok = id => (id && ownedItems.has(id) && itemById(id)) ? id : null;
+    equipped = {
+        name: ok(eq.name),
+        frame: ok(eq.frame),
+        theme: ok(eq.theme),
+        badges: Array.isArray(eq.badges)
+            ? eq.badges.filter(id => ok(id)).slice(0, MAX_BADGES)
+            : []
+    };
 }
 
 // ==========================================
@@ -387,9 +441,11 @@ async function saveProfile() {
 
 async function saveEquipped() {
     if (!currentPlayer) return;
-    try { localStorage.setItem("gamehub_equipped_" + currentPlayer.username, JSON.stringify(equipped)); } catch (e) {}
+    // badgeCount lets the leaderboard show how many badges a player has collected
+    const payload = { ...equipped, badgeCount: ownedBadgeCount() };
+    try { localStorage.setItem("gamehub_equipped_" + currentPlayer.username, JSON.stringify(payload)); } catch (e) {}
     if (!db) return;
-    const { error } = await db.from("profiles").update({ equipped: equipped }).eq("id", currentPlayer.id);
+    const { error } = await db.from("profiles").update({ equipped: payload }).eq("id", currentPlayer.id);
     if (error) console.warn("Equipped items not saved to the database (did you run the SQL step?):", error.message);
 }
 
@@ -456,12 +512,14 @@ function applyCosmetics() {
 
     const nameItem = itemById(equipped.name);
     const frameItem = itemById(equipped.frame);
-    const badgeItem = itemById(equipped.badge);
     const themeItem = itemById(equipped.theme);
 
     if (nameEl) nameEl.className = nameItem ? nameItem.css : "";
     if (avatarEl) avatarEl.className = "avatar" + (frameItem ? " " + frameItem.css : "");
-    if (badgeEl) badgeEl.textContent = badgeItem ? " " + badgeItem.emoji : "";
+    if (badgeEl) {
+        badgeEl.innerHTML = equipped.badges.map(id => itemById(id)).filter(Boolean)
+            .map(it => badgeImg(it, "sm")).join("");
+    }
     document.body.dataset.theme = themeItem ? themeItem.css : "";
 }
 
@@ -485,10 +543,10 @@ function renderGames() {
     if (!grid) return;
     grid.innerHTML = Object.entries(GAME_LIST).map(([id, g], i) => `
         <div class="game-card" data-game="${id}" style="--g1:${g.colors[0]};--g2:${g.colors[1]};animation-delay:${i * 0.25}s">
-            <span class="game-emoji">${g.icon}</span>
+            <span class="game-emoji">${ico(g.icon)}</span>
             <h4>${escapeHtml(g.name)}</h4>
             <span class="game-tag">${escapeHtml(g.tag)}</span>
-            <div class="game-best">${bestScores[id] !== undefined ? "⭐ Best: " + bestScores[id] : "Not played yet"}</div>
+            <div class="game-best">${bestScores[id] !== undefined ? ico("star") + " Best: " + bestScores[id] : "Not played yet"}</div>
         </div>`).join("");
 }
 
@@ -497,12 +555,12 @@ function renderLeaderboardTabs() {
     const box = document.getElementById("leaderboard-tabs");
     if (!box) return;
     const tabs = [
-        { id: "xp", label: "⭐ XP" },
-        { id: "wins", label: "🏆 Wins" },
-        ...Object.entries(GAME_LIST).map(([id, g]) => ({ id, label: `${g.icon} ${g.name}` }))
+        { id: "xp", label: "XP", icon: "star" },
+        { id: "wins", label: "Wins", icon: "trophy" },
+        ...Object.entries(GAME_LIST).map(([id, g]) => ({ id, label: g.name, icon: g.icon }))
     ];
     box.innerHTML = tabs.map(t =>
-        `<button class="chip ${t.id === leaderboardMode ? "active" : ""}" data-mode="${t.id}">${escapeHtml(t.label)}</button>`).join("");
+        `<button class="chip ${t.id === leaderboardMode ? "active" : ""}" data-mode="${t.id}">${ico(t.icon)} ${escapeHtml(t.label)}</button>`).join("");
 }
 
 async function loadLeaderboard() {
@@ -514,25 +572,33 @@ async function loadLeaderboard() {
         let rows = [];
 
         if (mode === "xp" || mode === "wins") {
-            const { data, error } = await db.from("profiles")
-                .select("username, xp, level, wins").order(mode, { ascending: false }).limit(20);
-            if (error) throw error;
-            rows = (data || []).map(p => ({
+            const query = cols => db.from("profiles").select(cols).order(mode, { ascending: false }).limit(20);
+            let res = await query("username, xp, level, wins, equipped");
+            if (res.error) res = await query("username, xp, level, wins"); // equipped column missing
+            if (res.error) throw res.error;
+            rows = (res.data || []).map(p => ({
                 name: p.username,
+                eq: p.equipped,
                 main: mode === "xp" ? `${p.xp || 0} XP` : `${p.wins || 0} wins`,
                 sub: `Level ${p.level || 0} • ${mode === "xp" ? (p.wins || 0) + " wins" : (p.xp || 0) + " XP"}`
             }));
         } else {
             const g = GAME_LIST[mode];
-            const { data, error } = await db.from("game_scores")
-                .select("score, player_id, profiles(username)")
+            const query = cols => db.from("game_scores").select(cols)
                 .eq("game_name", g.name).order("score", { ascending: false }).limit(200);
-            if (error) throw error;
+            let res = await query("score, player_id, profiles(username, equipped)");
+            if (res.error) res = await query("score, player_id, profiles(username)");
+            if (res.error) throw res.error;
             const seen = new Set();
-            (data || []).forEach(r => {
+            (res.data || []).forEach(r => {
                 if (seen.has(r.player_id)) return;
                 seen.add(r.player_id);
-                rows.push({ name: (r.profiles && r.profiles.username) || "Unknown", main: `${r.score} pts`, sub: "Best score" });
+                rows.push({
+                    name: (r.profiles && r.profiles.username) || "Unknown",
+                    eq: r.profiles && r.profiles.equipped,
+                    main: `${r.score} pts`,
+                    sub: "Best score"
+                });
             });
             rows = rows.slice(0, 20);
         }
@@ -540,18 +606,20 @@ async function loadLeaderboard() {
         if (mode !== leaderboardMode) return; // user switched tabs while loading
 
         if (rows.length === 0) {
-            list.innerHTML = `<p class="empty-note">No scores yet. Be the first! 🚀</p>`;
+            list.innerHTML = `<p class="empty-note">No scores yet. Be the first!</p>`;
             return;
         }
 
-        const medals = ["🥇", "🥈", "🥉"];
         list.innerHTML = rows.map((r, i) => {
             const isMe = currentPlayer && r.name === currentPlayer.username;
             const top = i < 3 ? ` top${i + 1}` : "";
             return `
             <div class="rank-row${top}${isMe ? " me" : ""}">
-                <div class="rank-pos">${i < 3 ? medals[i] : "#" + (i + 1)}</div>
-                <div class="rank-info"><h4>${escapeHtml(r.name)}</h4><p>${escapeHtml(r.sub)}</p></div>
+                <div class="rank-pos">${i < 3 ? rankIcon(i + 1) : "#" + (i + 1)}</div>
+                <div class="rank-info">
+                    <div class="rank-name"><h4>${escapeHtml(r.name)}</h4>${badgesHtml(r.eq)}</div>
+                    <p>${escapeHtml(r.sub)}</p>
+                </div>
                 <div class="rank-main">${escapeHtml(r.main)}</div>
             </div>`;
         }).join("");
@@ -574,19 +642,19 @@ function renderMissions() {
         const pct = Math.min(100, Math.round((st.progress / m.target) * 100));
 
         let action = "";
-        if (st.claimed) action = `<button class="btn btn-small btn-owned" style="width:auto;padding:8px 14px;margin:0" disabled>Claimed ✓</button>`;
+        if (st.claimed) action = `<button class="btn btn-small btn-owned" style="width:auto;padding:8px 14px;margin:0" disabled>Claimed</button>`;
         else if (done) action = `<button class="btn btn-small btn-claim" style="margin:0" onclick="claimMission('${m.id}')">Claim!</button>`;
 
         return `
         <div class="mission-card ${st.claimed ? "claimed" : ""} ${done && !st.claimed ? "ready" : ""}">
-            <div class="mission-icon">${m.icon}</div>
+            <div class="mission-icon">${ico(m.icon)}</div>
             <div class="mission-info">
                 <h4>${escapeHtml(m.title)}</h4>
                 <p>${Math.min(st.progress, m.target)}/${m.target} Completed</p>
                 <div class="mission-bar"><div class="mission-bar-fill" style="width:${pct}%"></div></div>
             </div>
             <div class="mission-right">
-                <div class="mission-reward"><i class="ph-fill ph-coin"></i> ${m.reward}</div>
+                <div class="mission-reward">${ico("coin")} ${m.reward}</div>
                 ${action}
             </div>
         </div>`;
@@ -616,7 +684,7 @@ async function claimMission(id) {
         return;
     }
 
-    showNotification(`Mission reward claimed: +${def.reward} Coins 🪙`, "success");
+    showNotification(`Mission reward claimed: +${def.reward} Coins`, "success");
     confetti(30);
     await checkAchievements(null); // e.g. Daily Champion
     updateUI();
@@ -632,8 +700,8 @@ function renderAchievements() {
     list.innerHTML = ACHIEVEMENTS.map(a => {
         const unlocked = unlockedAchievements.has(a.id);
         return unlocked
-            ? `<div class="card unlocked"><span class="ach-emoji">${a.icon}</span><h4>${escapeHtml(a.name)}</h4><p>${escapeHtml(a.desc)}</p><div class="ach-reward">✓ +${a.reward} 🪙</div></div>`
-            : `<div class="card locked"><span class="ach-emoji">🔒</span><h4>${escapeHtml(a.name)}</h4><p>${escapeHtml(a.desc)}</p><div class="ach-reward">+${a.reward} 🪙</div></div>`;
+            ? `<div class="card unlocked"><span class="ach-emoji">${ico(a.icon)}</span><h4>${escapeHtml(a.name)}</h4><p>${escapeHtml(a.desc)}</p><div class="ach-reward">${ico("check")} +${a.reward} ${ico("coin")}</div></div>`
+            : `<div class="card locked"><span class="ach-emoji">${ico("lock")}</span><h4>${escapeHtml(a.name)}</h4><p>${escapeHtml(a.desc)}</p><div class="ach-reward">+${a.reward} ${ico("coin")}</div></div>`;
     }).join("");
 
     const count = document.getElementById("achievements-count");
@@ -657,16 +725,47 @@ function renderProfile() {
             <div class="stat-tile"><b>${rate}%</b><span>WIN RATE</span></div>
         </div>`;
 
+    // Equipped badge showcase
+    const showcase = document.getElementById("profile-badges");
+    const items = equipped.badges.map(id => itemById(id)).filter(Boolean);
+    if (showcase) {
+        let html = "";
+        for (let i = 0; i < MAX_BADGES; i++) {
+            const it = items[i];
+            if (it) {
+                const t = badgeTier(it.price);
+                html += `<div class="showcase-slot">${badgeImg(it, "lg")}<h4>${escapeHtml(it.name)}</h4><span class="tier tier-${t.id}">${t.label}</span></div>`;
+            } else {
+                html += `<div class="showcase-slot empty">${ico("gem")}<small>Empty slot</small></div>`;
+            }
+        }
+        showcase.innerHTML = html;
+    }
+    const bc = document.getElementById("badges-count");
+    if (bc) bc.textContent = `${items.length}/${MAX_BADGES}`;
+    const bt = document.getElementById("badges-total");
+    if (bt) bt.textContent = `${ownedBadgeCount()}/${BADGE_ITEMS.length} badges collected. Get more in the Store!`;
+
     bests.innerHTML = Object.entries(GAME_LIST).map(([id, g]) => `
-        <div class="best-row"><span>${g.icon} ${escapeHtml(g.name)}</span><span>${bestScores[id] !== undefined ? bestScores[id] : "–"}</span></div>`).join("");
+        <div class="best-row"><span>${ico(g.icon)} ${escapeHtml(g.name)}</span><span>${bestScores[id] !== undefined ? bestScores[id] : "–"}</span></div>`).join("");
 }
 
 // ----- Store -----
 function previewHtml(it) {
-    if (it.slot === "name") return `<div class="store-preview"><span class="${it.css}" style="font-family:'Fredoka',sans-serif;font-size:1.5rem;font-weight:700">Name</span></div>`;
+    if (it.slot === "name") return `<div class="store-preview"><span class="${it.css}" style="font-size:1.5rem">Name</span></div>`;
     if (it.slot === "frame") return `<div class="store-preview"><div class="avatar ${it.css}">A</div></div>`;
-    if (it.slot === "badge") return `<div class="store-preview big-emoji">${it.emoji}</div>`;
     return `<div class="store-preview"><div class="theme-swatch" style="background:${it.swatch}"></div></div>`;
+}
+
+function badgeCard(it) {
+    const owned = ownedItems.has(it.id);
+    const isOn = equipped.badges.includes(it.id);
+    const t = badgeTier(it.price);
+    let btn;
+    if (!owned) btn = `<button class="btn btn-small" data-action="buy" data-item="${it.id}">${ico("coin")} ${it.price}</button>`;
+    else if (isOn) btn = `<button class="btn btn-small btn-on" data-action="unequip" data-item="${it.id}">Equipped</button>`;
+    else btn = `<button class="btn btn-small btn-equip" data-action="equip" data-item="${it.id}">Equip</button>`;
+    return `<div class="badge-card ${owned ? "owned" : ""}"><span class="tier tier-${t.id}">${t.label}</span>${badgeImg(it)}<h4>${escapeHtml(it.name)}</h4>${btn}</div>`;
 }
 
 function renderStore() {
@@ -674,36 +773,61 @@ function renderStore() {
     if (!list) return;
 
     list.innerHTML = STORE_SECTIONS.map(sec => {
-        const cards = STORE_ITEMS.filter(i => i.slot === sec.slot).map(it => {
+        const items = STORE_ITEMS.filter(i => i.slot === sec.slot);
+        const pill = sec.slot === "badge" ? `<span class="count-pill">${ownedBadgeCount()}/${items.length}</span>` : "";
+        const head = `<h3 class="store-section-title">${ico(sec.icon)} ${sec.title} ${pill}</h3>`;
+
+        if (sec.slot === "badge") {
+            return head +
+                `<p class="section-sub">Equip up to ${MAX_BADGES}. They show next to your name on the leaderboard.</p>` +
+                `<div class="badge-grid">${items.map(badgeCard).join("")}</div>`;
+        }
+
+        const cards = items.map(it => {
             const owned = ownedItems.has(it.id);
             const isOn = equipped[it.slot] === it.id;
             let btn;
-            if (!owned) btn = `<button class="btn btn-small" data-action="buy" data-item="${it.id}">🪙 ${it.price}</button>`;
-            else if (isOn) btn = `<button class="btn btn-small btn-on" data-action="unequip" data-item="${it.id}">Equipped ✓</button>`;
+            if (!owned) btn = `<button class="btn btn-small" data-action="buy" data-item="${it.id}">${ico("coin")} ${it.price}</button>`;
+            else if (isOn) btn = `<button class="btn btn-small btn-on" data-action="unequip" data-item="${it.id}">Equipped</button>`;
             else btn = `<button class="btn btn-small btn-equip" data-action="equip" data-item="${it.id}">Equip</button>`;
             return `<div class="store-card ${owned ? "owned" : ""}">${previewHtml(it)}<h4>${escapeHtml(it.name)}</h4>${btn}</div>`;
         }).join("");
-        return `<h3 class="store-section-title">${sec.title}</h3><div class="grid-2">${cards}</div>`;
+        return `${head}<div class="grid-2">${cards}</div>`;
     }).join("");
+}
+
+function afterEquipChange() {
+    applyCosmetics();
+    renderStore();
+    renderProfile();
+    saveEquipped();
 }
 
 function equipItem(id) {
     const it = itemById(id);
     if (!it || !ownedItems.has(id)) return;
-    equipped[it.slot] = id;
-    applyCosmetics();
-    renderStore();
-    saveEquipped();
+
+    if (it.slot === "badge") {
+        if (equipped.badges.includes(id)) return;
+        if (equipped.badges.length >= MAX_BADGES) {
+            showNotification(`You can equip up to ${MAX_BADGES} badges. Unequip one first.`, "error");
+            return;
+        }
+        equipped.badges.push(id);
+    } else {
+        equipped[it.slot] = id;
+    }
+
+    afterEquipChange();
     showNotification(`Equipped ${it.name}!`, "success");
 }
 
 function unequipItem(id) {
     const it = itemById(id);
     if (!it) return;
-    equipped[it.slot] = null;
-    applyCosmetics();
-    renderStore();
-    saveEquipped();
+    if (it.slot === "badge") equipped.badges = equipped.badges.filter(b => b !== id);
+    else equipped[it.slot] = null;
+    afterEquipChange();
 }
 
 async function buyItem(itemId) {
@@ -735,8 +859,13 @@ async function buyItem(itemId) {
         }
 
         ownedItems.add(itemId);
-        equipped[item.slot] = itemId; // auto-equip new purchases
-        showNotification(`Purchased ${item.name}! 🎉`, "success");
+        // auto-equip new purchases (badges only if there is a free slot)
+        if (item.slot === "badge") {
+            if (equipped.badges.length < MAX_BADGES) equipped.badges.push(itemId);
+        } else {
+            equipped[item.slot] = itemId;
+        }
+        showNotification(`Purchased ${item.name}!`, "success");
         confetti(35);
         saveEquipped();
 
@@ -769,7 +898,7 @@ function launchGame(gameId) {
     if (gameCleanup) { gameCleanup(); gameCleanup = null; }
 
     overlay.classList.add("active-flex");
-    if (title) title.textContent = `${game.icon} ${game.name}`;
+    if (title) title.innerHTML = `${ico(game.icon)} ${escapeHtml(game.name)}`;
     area.innerHTML = "";
 
     currentGameId = gameId;
@@ -835,7 +964,7 @@ async function handleGameEnd(gameId, result) {
         st.progress = Math.min(m.target, st.progress + gain);
         changedMissions.push(m.id);
         if (st.progress >= m.target) {
-            setTimeout(() => showNotification(`Mission complete: ${m.title}! Claim it in Tasks 🎯`, "achievement"), 1500);
+            setTimeout(() => showNotification(`Mission complete: ${m.title}! Claim it in Tasks`, "achievement"), 1500);
         }
     });
 
@@ -844,7 +973,7 @@ async function handleGameEnd(gameId, result) {
     if (win) confetti(70);
     if (leveledUp) {
         confetti(40);
-        setTimeout(() => showNotification(`Level Up! You are now Level ${currentPlayer.level} 🚀`, "success"), 600);
+        setTimeout(() => showNotification(`Level Up! You are now Level ${currentPlayer.level}`, "success"), 600);
     }
     updateUI();
     renderMissions();
@@ -868,13 +997,13 @@ function renderResultScreen(gameId, result, score, xp, coins, newBest) {
     const win = !!result.win;
     area.innerHTML = `
         <div class="result-card ${win ? "win" : "lose"}">
-            <div class="result-emoji">${win ? "🏆" : "💥"}</div>
+            <div class="result-emoji">${ico(win ? "trophy" : "skull")}</div>
             <h2>${escapeHtml(result.title || (win ? "Victory!" : "Good try!"))}</h2>
             <p class="result-note">${escapeHtml(result.summary || "")}</p>
             <div class="result-score">${score}<small>SCORE</small></div>
-            ${newBest ? `<div class="new-best">⭐ New personal best!</div>` : ""}
-            <div class="result-rewards"><span>+${xp} XP</span><span>+${coins} 🪙</span></div>
-            <button class="btn" id="res-again">Play Again 🔁</button>
+            ${newBest ? `<div class="new-best">${ico("star")} New personal best!</div>` : ""}
+            <div class="result-rewards"><span>+${xp} XP</span><span>+${coins} ${ico("coin")}</span></div>
+            <button class="btn" id="res-again">Play Again</button>
             <button class="btn btn-ghost" id="res-menu">Back to Arcade</button>
         </div>`;
     document.getElementById("res-again").addEventListener("click", () => launchGame(gameId));
@@ -939,12 +1068,12 @@ function showNotification(message, type = "default") {
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
 
-    let icon = "ph-info";
-    if (type === "success") icon = "ph-check-circle";
-    if (type === "error") icon = "ph-warning-circle";
-    if (type === "achievement") icon = "ph-trophy";
+    let icon = "orb";
+    if (type === "success") icon = "check";
+    if (type === "error") icon = "cross";
+    if (type === "achievement") icon = "trophy";
 
-    toast.innerHTML = `<i class="ph-fill ${icon}"></i> <span>${escapeHtml(message)}</span>`;
+    toast.innerHTML = `<i>${ico(icon)}</i> <span>${escapeHtml(message)}</span>`;
     container.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }

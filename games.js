@@ -2,6 +2,7 @@
 // GAMES. Each game gets (area, finish).
 // Call finish({ score, win, title, summary, extra }) when it ends.
 // Return a cleanup function that stops any timers.
+// Icons come from icons.js: ico("name")
 // ==========================================
 
 function shuffle(arr) {
@@ -15,12 +16,12 @@ function shuffle(arr) {
 function randInt(n) { return Math.floor(Math.random() * n); }
 
 const GAME_LIST = {
-    tictactoe:   { name: "Tic-Tac-Toe",   tag: "Strategy",  icon: "❌", colors: ["#F472B6", "#FB7185"], scoreMax: 250,  start: startTicTacToe },
-    guessnumber: { name: "Guess Number",  tag: "Logic",     icon: "🔢", colors: ["#38BDF8", "#6366F1"], scoreMax: 550,  start: startGuessNumber },
-    matching:    { name: "Matching Cards", tag: "Memory",   icon: "🃏", colors: ["#34D399", "#10B981"], scoreMax: 900,  start: startMatching },
-    reaction:    { name: "Reaction Rush", tag: "Speed",     icon: "⚡", colors: ["#FBBF24", "#F97316"], scoreMax: 3000, start: startReaction },
-    codebreaker: { name: "Code Breaker",  tag: "Deduction", icon: "🔐", colors: ["#A855F7", "#6D28D9"], scoreMax: 700,  start: startCodeBreaker },
-    trivia:      { name: "Trivia Blitz",  tag: "Knowledge", icon: "🧠", colors: ["#FB7185", "#E11D48"], scoreMax: 1000, start: startTrivia }
+    tictactoe:   { name: "Tic-Tac-Toe",   tag: "Strategy",  icon: "cross", colors: ["#F472B6", "#FB7185"], scoreMax: 250,  start: startTicTacToe },
+    guessnumber: { name: "Guess Number",  tag: "Logic",     icon: "dice",  colors: ["#38BDF8", "#6366F1"], scoreMax: 550,  start: startGuessNumber },
+    matching:    { name: "Matching Cards", tag: "Memory",   icon: "cards", colors: ["#34D399", "#10B981"], scoreMax: 900,  start: startMatching },
+    reaction:    { name: "Reaction Rush", tag: "Speed",     icon: "bolt",  colors: ["#FBBF24", "#F97316"], scoreMax: 3000, start: startReaction },
+    codebreaker: { name: "Code Breaker",  tag: "Deduction", icon: "key",   colors: ["#A855F7", "#6D28D9"], scoreMax: 700,  start: startCodeBreaker },
+    trivia:      { name: "Trivia Blitz",  tag: "Knowledge", icon: "orb",   colors: ["#FB7185", "#E11D48"], scoreMax: 1000, start: startTrivia }
 };
 
 // ------------------------------------------
@@ -34,11 +35,11 @@ function startTicTacToe(area, finish) {
     const later = (fn, ms) => { timers.push(setTimeout(fn, ms)); };
 
     area.innerHTML = `
-        <div class="game-info" id="ttt-status">Your turn ❌</div>
+        <div class="game-info" id="ttt-status">Your turn ${ico("cross")}</div>
         <div class="ttt-board">
             ${board.map((_, i) => `<button class="ttt-cell" data-i="${i}"></button>`).join("")}
         </div>
-        <p class="game-hint">You are ❌. Beat the CPU ⭕. Win in fewer moves for a bigger score!</p>`;
+        <p class="game-hint">You are ${ico("cross")} Beat the CPU ${ico("ring")} Win in fewer moves for a bigger score!</p>`;
 
     const status = area.querySelector("#ttt-status");
     const cells = area.querySelectorAll(".ttt-cell");
@@ -72,7 +73,7 @@ function startTicTacToe(area, finish) {
 
     function place(i, p) {
         board[i] = p;
-        cells[i].textContent = p === "X" ? "❌" : "⭕";
+        cells[i].innerHTML = ico(p === "X" ? "cross" : "ring");
         cells[i].classList.add(p === "X" ? "x" : "o");
         cells[i].disabled = true;
     }
@@ -85,15 +86,15 @@ function startTicTacToe(area, finish) {
             over = true;
             w.line.forEach(i => cells[i].classList.add("win"));
             if (w.p === "X") {
-                status.textContent = "You win! 🎉";
+                status.innerHTML = "You win!";
                 return end({ score: 200 + (5 - xMoves) * 25, win: true, title: "You beat the CPU!", summary: `Won in ${xMoves} moves`, extra: { moves: xMoves, outcome: "win" } });
             }
-            status.textContent = "CPU wins 🤖";
+            status.innerHTML = "CPU wins";
             return end({ score: 0, win: false, title: "The CPU got you!", summary: "Try a different strategy", extra: { moves: xMoves, outcome: "loss" } });
         }
         if (board.every(Boolean)) {
             over = true;
-            status.textContent = "It's a draw 🤝";
+            status.innerHTML = "It's a draw";
             return end({ score: 80, win: false, title: "It's a draw!", summary: "Nobody wins this time", extra: { moves: xMoves, outcome: "draw" } });
         }
         return false;
@@ -105,11 +106,11 @@ function startTicTacToe(area, finish) {
         place(i, "X");
         if (checkEnd()) return;
         locked = true;
-        status.textContent = "CPU is thinking… 🤖";
+        status.innerHTML = "CPU is thinking…";
         later(() => {
             place(cpuMove(), "O");
             locked = false;
-            if (!checkEnd()) status.textContent = "Your turn ❌";
+            if (!checkEnd()) status.innerHTML = `Your turn ${ico("cross")}`;
         }, 550);
     }
 
@@ -143,7 +144,7 @@ function startGuessNumber(area, finish) {
     const hearts = area.querySelector("#gn-hearts");
 
     function renderHearts() {
-        hearts.textContent = "❤️".repeat(MAX_TRIES - tries) + "🖤".repeat(tries);
+        hearts.innerHTML = ico("heart").repeat(MAX_TRIES - tries) + ico("heartDark").repeat(tries);
     }
     renderHearts();
 
@@ -164,7 +165,7 @@ function startGuessNumber(area, finish) {
         if (v === secret) {
             over = true;
             const left = MAX_TRIES - tries;
-            feedback.textContent = `🎉 ${secret} is right!`;
+            feedback.innerHTML = `${ico("check")} ${secret} is right!`;
             later(() => finish({
                 score: 100 + left * 75, win: true,
                 title: "You cracked it!", summary: `Found ${secret} in ${tries} ${tries === 1 ? "guess" : "guesses"}`,
@@ -174,12 +175,15 @@ function startGuessNumber(area, finish) {
         }
 
         const diff = Math.abs(v - secret);
-        const heat = diff <= 5 ? "🔥 Very hot" : diff <= 15 ? "♨️ Warm" : diff <= 30 ? "🌤️ Cool" : "🧊 Cold";
-        const dir = v < secret ? "⬆️ Higher" : "⬇️ Lower";
-        feedback.textContent = `${dir} · ${heat}`;
+        const heat = diff <= 5 ? `<span class="heat-hot">${ico("fire")} Very hot</span>`
+                   : diff <= 15 ? `<span class="heat-warm">Warm</span>`
+                   : diff <= 30 ? `<span class="heat-cool">Cool</span>`
+                   : `<span class="heat-cold">Cold</span>`;
+        const dir = v < secret ? `${ico("arrowup")} Higher` : `${ico("arrowup", "flip")} Lower`;
+        feedback.innerHTML = `${dir} · ${heat}`;
         const chip = document.createElement("div");
         chip.className = "gn-chip";
-        chip.textContent = `${v} ${v < secret ? "⬆️" : "⬇️"}`;
+        chip.innerHTML = `${v} ${ico("arrowup", v < secret ? "" : "flip")}`;
         history.prepend(chip);
 
         if (tries >= MAX_TRIES) {
@@ -204,8 +208,8 @@ function startGuessNumber(area, finish) {
 // 3. MATCHING CARDS (fewer moves + faster = more points)
 // ------------------------------------------
 function startMatching(area, finish) {
-    const EMOJI = ["🐶", "🐱", "🦊", "🐸", "🐼", "🦁", "🐵", "🐙"];
-    const deck = shuffle([...EMOJI, ...EMOJI]);
+    const FACES = ["gem", "heart", "star", "bolt", "key", "sword", "crown", "coin"];
+    const deck = shuffle([...FACES, ...FACES]);
     const timers = [];
     let first = null, lock = false, moves = 0, matched = 0, seconds = 0, started = false, tick = null;
     const later = (fn, ms) => { timers.push(setTimeout(fn, ms)); };
@@ -220,7 +224,7 @@ function startMatching(area, finish) {
             ${deck.map((e, i) => `
                 <button class="mem-card" data-i="${i}">
                     <span class="mem-face mem-back">?</span>
-                    <span class="mem-face mem-front">${e}</span>
+                    <span class="mem-face mem-front">${ico(e)}</span>
                 </button>`).join("")}
         </div>
         <p class="game-hint">Find all 8 pairs. Fewer moves and a faster time give a bigger score!</p>`;
@@ -253,7 +257,7 @@ function startMatching(area, finish) {
             c.classList.add("matched");
             matched++;
             pairsEl.textContent = matched;
-            if (matched === EMOJI.length) {
+            if (matched === FACES.length) {
                 clearInterval(tick);
                 const score = Math.max(100, 1200 - moves * 30 - seconds * 5);
                 later(() => finish({
@@ -310,7 +314,7 @@ function startReaction(area, finish) {
         dots.innerHTML = Array.from({ length: ROUNDS }, (_, i) => {
             const t = times[i];
             if (t === undefined) return `<span class="rr-dot"></span>`;
-            if (t === null) return `<span class="rr-dot bad">✖</span>`;
+            if (t === null) return `<span class="rr-dot bad">×</span>`;
             return `<span class="rr-dot done">${t}</span>`;
         }).join("");
     }
@@ -353,7 +357,7 @@ function startReaction(area, finish) {
             times.push(null);
             renderDots();
             state = "between";
-            setPad("between", "Too early! 😬", "That round scores 0");
+            setPad("between", "Too early!", "That round scores 0");
             afterRound();
             return;
         }
@@ -364,7 +368,7 @@ function startReaction(area, finish) {
             points += Math.max(0, Math.round(1000 - ms * 1.5));
             renderDots();
             state = "between";
-            setPad("between", `${ms} ms`, ms < 250 ? "Lightning! ⚡" : ms < 400 ? "Nice! 👍" : "Keep going 💪");
+            setPad("between", `${ms} ms`, ms < 250 ? "Lightning!" : ms < 400 ? "Nice!" : "Keep going");
             afterRound();
         }
     });
@@ -399,7 +403,7 @@ function startCodeBreaker(area, finish) {
             <button class="btn" id="cb-submit">Submit</button>
         </div>
         <div class="cb-attempts" id="cb-attempts"></div>
-        <p class="game-hint">⚪ = right color, right spot · 🟡 = right color, wrong spot</p>
+        <p class="game-hint"><span class="fb-dot exact"></span> = right color, right spot · <span class="fb-dot near"></span> = right color, wrong spot</p>
         <div class="cb-history" id="cb-history"></div>`;
 
     const current = area.querySelector("#cb-current");
@@ -477,7 +481,7 @@ function startCodeBreaker(area, finish) {
 
         if (attempts >= MAX) {
             over = true;
-            addRow([...secret], LEN, 0, "🔒 The secret code");
+            addRow([...secret], LEN, 0, `${ico("lock")} The secret code`);
             render();
             later(() => finish({
                 score: 0, win: false,
@@ -546,7 +550,7 @@ function startTrivia(area, finish) {
         answered = false;
         const q = qs[idx];
         area.innerHTML = `
-            <div class="tv-top"><span>Question ${idx + 1}/${TOTAL}</span><span>✅ ${correct}</span><span id="tv-time">${TIME}</span></div>
+            <div class="tv-top"><span>Question ${idx + 1}/${TOTAL}</span><span>${ico("check")} ${correct}</span><span id="tv-time">${TIME}</span></div>
             <div class="tv-timebar"><div class="tv-timefill" id="tv-fill"></div></div>
             <div class="tv-q">${escapeHtml(q.q)}</div>
             <div class="tv-opts">
