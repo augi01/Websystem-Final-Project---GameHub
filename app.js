@@ -149,23 +149,49 @@ function hideWelcomeModal() {
     if (modal) modal.style.display = "none";
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-    const input = document.getElementById("username-input");
-    if (input) input.addEventListener("keydown", e => { if (e.key === "Enter") registerNewPlayer(); });
+function showFatal(msg) {
+    const bar = document.createElement("div");
+    bar.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99999;background:#B91C1C;color:#fff;padding:12px 16px;font:700 14px sans-serif;text-align:center";
+    bar.textContent = msg;
+    document.body.appendChild(bar);
+}
 
-    // Click handlers (set once)
-    document.getElementById("games-grid").addEventListener("click", e => {
+document.addEventListener("DOMContentLoaded", async () => {
+    let savedName = null;
+    try { savedName = localStorage.getItem(SAVED_NAME_KEY); } catch (e) {}
+    
+    // Show the name popup FIRST, so a problem further down can never hide it
+    if (!savedName || !db) showWelcomeModal();
+    if (!db) showFatal("Could not load the Supabase library. Check your internet connection.");
+    
+    if (typeof GAME_LIST === "undefined") {
+        showFatal("games.js did not load. Make sure the file is named exactly games.js and is in the same folder as index.html on Vercel.");
+        return;
+    }
+    
+    if (!document.getElementById("games-grid")) {
+        showFatal("index.html is the old version. Replace it with the new one and redeploy.");
+        return;
+    }
+    
+    const on = (id, evt, fn) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener(evt, fn);
+    };
+    
+    on("username-input", "keydown", e => { if (e.key === "Enter") registerNewPlayer(); });
+    on("games-grid", "click", e => {
         const card = e.target.closest("[data-game]");
         if (card) launchGame(card.dataset.game);
     });
-    document.getElementById("leaderboard-tabs").addEventListener("click", e => {
+    on("leaderboard-tabs", "click", e => {
         const chip = e.target.closest("[data-mode]");
         if (!chip) return;
         leaderboardMode = chip.dataset.mode;
         renderLeaderboardTabs();
         loadLeaderboard();
     });
-    document.getElementById("store-list").addEventListener("click", e => {
+    on("store-list", "click", e => {
         const b = e.target.closest("[data-action]");
         if (!b) return;
         const id = b.dataset.item;
@@ -173,21 +199,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         else if (b.dataset.action === "equip") equipItem(id);
         else if (b.dataset.action === "unequip") unequipItem(id);
     });
-
-    renderGames();
-    renderLeaderboardTabs();
-    renderStore();
-    renderAchievements();
-    renderMissions();
-
-    let savedName = null;
-    try { savedName = localStorage.getItem(SAVED_NAME_KEY); } catch (e) {}
-
+    
+    try {
+        renderGames();
+        renderLeaderboardTabs();
+        renderStore();
+        renderAchievements();
+        renderMissions();
+    } catch (err) {
+        console.error(err);
+        showFatal("Startup error: " + err.message);
+    }
+    
     if (savedName && db) {
-        const ok = await loginPlayer(savedName, true);
-        if (!ok) showWelcomeModal();
-    } else {
-        showWelcomeModal();
+        try {
+            const ok = await loginPlayer(savedName, true);
+            if (!ok) showWelcomeModal();
+        } catch (err) {
+            console.error(err);
+            showWelcomeModal();
+        }
     }
 });
 

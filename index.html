@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gamehub | Entertainment</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Lilita+One&family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-    <div class="bg-blobs"><span></span><span></span><span></span></div>
 
     <div id="toast-container" class="toast-container"></div>
 
@@ -34,6 +32,11 @@
     <!-- MAIN APP CONTENT -->
     <main>
         <section id="view-games" class="view-section active">
+            <div class="hero">
+                <div class="hero-logo"><span>GAME</span><b>HUB</b></div>
+                <p>Play • Win • Collect</p>
+                <div class="hero-sprites">🏰 ⚔️ 🐉 🛡️ 👑</div>
+            </div>
             <h2 class="section-title">🎮 Arcade</h2>
             <div class="games-grid" id="games-grid"></div>
         </section>
@@ -47,18 +50,18 @@
         </section>
 
         <section id="view-store" class="view-section">
-            <h2 class="section-title">🛍️ Arcade Store</h2>
+            <h2 class="section-title">🛍️ Store</h2>
             <div id="store-list"></div>
         </section>
 
         <section id="view-missions" class="view-section">
-            <h2 class="section-title">🎯 Daily Missions</h2>
+            <h2 class="section-title">🎯 Missions</h2>
             <p class="section-sub" id="missions-summary">Resets every day at midnight</p>
             <div id="missions-list"></div>
         </section>
 
         <section id="view-profile" class="view-section">
-            <h2 class="section-title">😎 My Profile</h2>
+            <h2 class="section-title">😎 Profile</h2>
             <div id="profile-stats"></div>
             <h3 class="sub-title">Personal Bests</h3>
             <div id="profile-bests"></div>
@@ -95,11 +98,11 @@
     <!-- WELCOME MODAL -->
     <div id="welcome-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-emoji">🎮</div>
+            <div class="modal-emoji">🏰</div>
             <h3>Welcome to Gamehub</h3>
             <p>Enter your player name to start your arcade journey.</p>
             <input type="text" id="username-input" placeholder="e.g. PlayerOne" maxlength="12" autocomplete="off">
-            <button class="btn" onclick="registerNewPlayer()">Start Playing 🚀</button>
+            <button class="btn" onclick="registerNewPlayer()">Start Playing!</button>
         </div>
     </div>
 
@@ -110,7 +113,7 @@
                 <i class="ph ph-arrow-left"></i> Back
             </button>
             <h3 id="active-game-title">Game Title</h3>
-            <div style="width: 60px;"></div>
+            <div style="width: 70px;"></div>
         </header>
         <div id="game-board-area"></div>
     </section>
