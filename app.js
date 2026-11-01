@@ -8,24 +8,30 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 console.log("Supabase Client Initialized:", supabase);
 
 // ==========================================
-// 0. SUPABASE CONNECTION
-// ==========================================
-const supabaseUrl = 'https://kkwgodtsatrmnvssojxt.supabase.co';
-const supabaseKey = 'sb_publishable_h9RjSCZ_8sHwA0RNhp3GOw_kxdoT_gn';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-// ==========================================
-// 1. STATE
+// 1. STATE & INITIALIZATION
 // ==========================================
 let currentPlayer = null;
+
+// Run this the moment the page loads!
+document.addEventListener("DOMContentLoaded", () => {
+    // Hide loading screens if you have them
+    const preloader = document.getElementById("preloader"); 
+    if (preloader) preloader.style.display = "none";
+    
+    const loadingScreen = document.getElementById("loading-screen"); 
+    if (loadingScreen) loadingScreen.style.display = "none";
+
+    // Show the welcome modal so the player can log in
+    const welcomeModal = document.getElementById("welcome-modal");
+    if (welcomeModal) welcomeModal.style.display = "flex";
+});
 
 // ==========================================
 // 2. LOGIN LOGIC (SUPABASE)
 // ==========================================
-const loginBtn = document.getElementById('login-btn');
-const usernameInput = document.getElementById('username-input');
-
-loginBtn.addEventListener('click', async () => {
+// This matches the onclick="registerNewPlayer()" button in your HTML!
+async function registerNewPlayer() {
+    const usernameInput = document.getElementById("username-input");
     const username = usernameInput.value.trim();
     
     if (!username) {
@@ -47,35 +53,51 @@ loginBtn.addEventListener('click', async () => {
         return;
     }
 
-    // Save data to state and update UI
+    // Save data to state
     currentPlayer = data[0];
     console.log("Player logged in:", currentPlayer);
     
-    document.getElementById('welcome-modal').style.display = 'none'; 
-    document.getElementById('arcade-menu').classList.remove('hidden'); 
+    // Hide the welcome modal and show the arcade
+    document.getElementById("welcome-modal").style.display = "none";
     
-    // Update the UI with their name, level, and coins
-    document.getElementById('player-name-display').innerText = currentPlayer.username;
-    document.getElementById('player-coins-display').innerText = currentPlayer.coins;
+    const arcadeMenu = document.getElementById('arcade-menu');
+    if (arcadeMenu) arcadeMenu.classList.remove('hidden'); 
+    
+    // Update the UI with their actual stats from the database
+    updateUI();
 
-    // Give them a nice welcome toast!
+    // Welcome toast!
     showNotification(`Welcome to the arcade, ${currentPlayer.username}!`, "success");
-});
+}
 
 // ==========================================
 // 3. UI UPDATES & NAVIGATION
 // ==========================================
 function updateUI() {
-    // Update Header
-    document.getElementById("ui-username").textContent = currentPlayer.username;
-    document.getElementById("ui-avatar").textContent = currentPlayer.username.charAt(0).toUpperCase();
-    document.getElementById("ui-level").textContent = currentPlayer.level;
-    document.getElementById("ui-xp").textContent = currentPlayer.xp;
-    document.getElementById("ui-coins").textContent = currentPlayer.coins;
+    // Safely update Header / Profile data
+    const uiUsername = document.getElementById("ui-username");
+    const uiAvatar = document.getElementById("ui-avatar");
+    const uiLevel = document.getElementById("ui-level");
+    const uiXp = document.getElementById("ui-xp");
+    const uiCoins = document.getElementById("ui-coins");
+    
+    if (uiUsername) uiUsername.textContent = currentPlayer.username;
+    if (uiAvatar) uiAvatar.textContent = currentPlayer.username.charAt(0).toUpperCase();
+    if (uiLevel) uiLevel.textContent = currentPlayer.level || 0;
+    if (uiXp) uiXp.textContent = currentPlayer.xp || 0;
+    if (uiCoins) uiCoins.textContent = currentPlayer.coins || 0;
+
+    // Check alternative ID names just in case
+    const playerNameDisplay = document.getElementById('player-name-display');
+    const playerCoinsDisplay = document.getElementById('player-coins-display');
+    if (playerNameDisplay) playerNameDisplay.innerText = currentPlayer.username;
+    if (playerCoinsDisplay) playerCoinsDisplay.innerText = currentPlayer.coins || 0;
 
     // Update Profile Page Stats
-    document.getElementById("stat-games").textContent = currentPlayer.gamesPlayed;
-    document.getElementById("stat-wins").textContent = currentPlayer.wins;
+    const statGames = document.getElementById("stat-games");
+    const statWins = document.getElementById("stat-wins");
+    if (statGames) statGames.textContent = currentPlayer.gamesPlayed || 0;
+    if (statWins) statWins.textContent = currentPlayer.wins || 0;
 }
 
 function switchTab(targetId, navElement) {
@@ -151,10 +173,11 @@ function awardEndGameRewards(score, isWin) {
     let xpGained = 50;
     let coinsGained = isWin ? 30 : 10;
     
-    currentPlayer.xp += xpGained;
-    currentPlayer.coins += coinsGained;
-    currentPlayer.gamesPlayed += 1;
-    if(isWin) currentPlayer.wins += 1;
+    // Ensure stats exist before adding (prevents 'NaN' bugs)
+    currentPlayer.xp = (currentPlayer.xp || 0) + xpGained;
+    currentPlayer.coins = (currentPlayer.coins || 0) + coinsGained;
+    currentPlayer.gamesPlayed = (currentPlayer.gamesPlayed || 0) + 1;
+    if(isWin) currentPlayer.wins = (currentPlayer.wins || 0) + 1;
 
     showNotification(`Game Over! +${coinsGained} Coins, +${xpGained} XP`, "success");
     
@@ -162,21 +185,26 @@ function awardEndGameRewards(score, isWin) {
     checkAchievements();
 
     // Level up logic
-    let xpNeeded = (currentPlayer.level + 1) * 100;
+    let xpNeeded = ((currentPlayer.level || 0) + 1) * 100;
     if (currentPlayer.xp >= xpNeeded) {
-        currentPlayer.level += 1;
+        currentPlayer.level = (currentPlayer.level || 0) + 1;
         setTimeout(() => showNotification(`Level Up! You are now Level ${currentPlayer.level}`, "success"), 1000);
     }
     
     updateUI();
     closeGame();
+    
+    // TODO: Supabase Update -> pushScoreAndRewardsToSupabase(...)
 }
 
 function checkAchievements() {
+    // Safety check just in case achievements array doesn't exist yet
+    if (!currentPlayer.achievements) currentPlayer.achievements = [];
+
     // Check First Win
     if (currentPlayer.wins === 1 && !currentPlayer.achievements.includes("first_win")) {
         currentPlayer.achievements.push("first_win");
-        currentPlayer.coins += 50; // Bonus for achievement
+        currentPlayer.coins += 50; 
         setTimeout(() => showNotification("Achievement Unlocked: First Win! (+50 Coins)", "achievement"), 500);
     }
     
@@ -187,25 +215,14 @@ function checkAchievements() {
         setTimeout(() => showNotification("Achievement Unlocked: Arcade Veteran! (+100 Coins)", "achievement"), 500);
     }
 }
-    
-    // TODO: Supabase Update -> pushScoreAndRewardsToSupabase(...)
-
-// Temporary function to mock database load for returning players
-function simulateDataLoad() {
-    // Keeps their actual device username, but mocks the stats for testing the UI
-    currentPlayer.level = 2;
-    currentPlayer.xp = 150;
-    currentPlayer.coins = 420;
-    currentPlayer.gamesPlayed = 12;
-    currentPlayer.wins = 5;
-    updateUI();
-}
 
 // ==========================================
 // 5. CUSTOM NOTIFICATIONS
 // ==========================================
 function showNotification(message, type = "default") {
     const container = document.getElementById("toast-container");
+    if (!container) return; // Prevent crashes if HTML is missing
+    
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
     
