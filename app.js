@@ -1,72 +1,66 @@
 // ==========================================
-// 1. STATE & INITIALIZATION
+// 0. SUPABASE CONNECTION
 // ==========================================
-let currentPlayer = {
-    id: null,
-    username: "",
-    level: 0,
-    xp: 0,
-    coins: 0,
-    gamesPlayed: 0,
-    wins: 0,
-    achievements: [] // Array of unlocked achievement IDs
-};
+const supabaseUrl = 'https://kkwgodtsatrmnvssojxt.supabase.co';
+const supabaseKey = 'sb_publishable_h9RjSCZ_8sHwA0RNhp3GOw_kxdoT_gn';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// Run immediately when the script loads
-document.addEventListener("DOMContentLoaded", () => {
-    authenticateDevice();
-});
+console.log("Supabase Client Initialized:", supabase);
 
 // ==========================================
-// 2. DEVICE AUTHENTICATION LOGIC
+// 0. SUPABASE CONNECTION
 // ==========================================
-function authenticateDevice() {
-    let savedId = localStorage.getItem("gamehub_player_id");
-    let savedName = localStorage.getItem("gamehub_username");
+const supabaseUrl = 'https://kkwgodtsatrmnvssojxt.supabase.co';
+const supabaseKey = 'sb_publishable_h9RjSCZ_8sHwA0RNhp3GOw_kxdoT_gn';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    if (savedId && savedName) {
-        // Returning player
-        console.log("Welcome back! Device ID:", savedId);
-        currentPlayer.id = savedId;
-        currentPlayer.username = savedName;
-        
-        // Temporary local simulation for returning user stats until Supabase is linked:
-        simulateDataLoad(); 
-    } else {
-        // New player / new device: Show the Welcome Modal
-        console.log("New device detected. Prompting for username.");
-        document.getElementById("welcome-modal").style.display = "flex";
-    }
-}
+// ==========================================
+// 1. STATE
+// ==========================================
+let currentPlayer = null;
 
-function registerNewPlayer() {
-    let inputName = document.getElementById("username-input").value.trim();
+// ==========================================
+// 2. LOGIN LOGIC (SUPABASE)
+// ==========================================
+const loginBtn = document.getElementById('login-btn');
+const usernameInput = document.getElementById('username-input');
+
+loginBtn.addEventListener('click', async () => {
+    const username = usernameInput.value.trim();
     
-    if (inputName.length < 3) {
-        alert("Name must be at least 3 characters.");
+    if (!username) {
+        showNotification("Please enter a username!", "error");
         return;
     }
 
-    // Generate unique ID and save permanently to the phone's browser
-    let newId = crypto.randomUUID(); 
-    localStorage.setItem("gamehub_player_id", newId);
-    localStorage.setItem("gamehub_username", inputName);
+    // Insert or fetch the player from Supabase
+    const { data, error } = await supabase
+        .from('profiles')
+        .upsert([
+            { username: username }
+        ], { onConflict: 'username' })
+        .select();
 
-    // Update current state
-    currentPlayer.id = newId;
-    currentPlayer.username = inputName;
-    currentPlayer.level = 0;
-    currentPlayer.xp = 0;
-    currentPlayer.coins = 0;
-    currentPlayer.gamesPlayed = 0;
-    currentPlayer.wins = 0;
+    if (error) {
+        console.error("Database Error:", error);
+        showNotification("Could not connect to the database.", "error");
+        return;
+    }
 
-    // Hide Modal and Update UI
-    document.getElementById("welcome-modal").style.display = "none";
-    updateUI();
+    // Save data to state and update UI
+    currentPlayer = data[0];
+    console.log("Player logged in:", currentPlayer);
     
-    // TODO: Supabase Insert -> createNewPlayerInSupabase(newId, inputName)
-}
+    document.getElementById('welcome-modal').style.display = 'none'; 
+    document.getElementById('arcade-menu').classList.remove('hidden'); 
+    
+    // Update the UI with their name, level, and coins
+    document.getElementById('player-name-display').innerText = currentPlayer.username;
+    document.getElementById('player-coins-display').innerText = currentPlayer.coins;
+
+    // Give them a nice welcome toast!
+    showNotification(`Welcome to the arcade, ${currentPlayer.username}!`, "success");
+});
 
 // ==========================================
 // 3. UI UPDATES & NAVIGATION
@@ -146,10 +140,10 @@ function buyItem(itemId, price) {
     if (currentPlayer.coins >= price) {
         currentPlayer.coins -= price;
         updateUI();
-        alert("Purchased item successfully!");
+        showNotification("Purchased item successfully!", "success");
         // TODO: Supabase Update -> updatePlayerInventory(currentPlayer.id, itemId)
     } else {
-        alert("Not enough coins! Play games to earn more.");
+        showNotification("Not enough coins! Play games to earn more.", "error");
     }
 }
 
