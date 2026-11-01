@@ -115,7 +115,7 @@ function updateUI() {
         "ui-level": currentPlayer.level || 0,
         "ui-xp": currentPlayer.xp || 0,
         "ui-coins": currentPlayer.coins || 0,
-        "stat-games": currentPlayer.gamesPlayed || 0,
+        "stat-games": currentPlayer.games_Played || 0,
         "stat-wins": currentPlayer.wins || 0
     };
 
@@ -237,7 +237,7 @@ function awardEndGameRewards(score, isWin) {
 
     currentPlayer.xp = (currentPlayer.xp || 0) + xpGained;
     currentPlayer.coins = (currentPlayer.coins || 0) + coinsGained;
-    currentPlayer.gamesPlayed = (currentPlayer.gamesPlayed || 0) + 1;
+    currentPlayer.games_Played = (currentPlayer.games_Played || 0) + 1;
     if (isWin) currentPlayer.wins = (currentPlayer.wins || 0) + 1;
 
     showNotification(`Game Over! +${coinsGained} Coins, +${xpGained} XP`, "success");
