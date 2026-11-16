@@ -1,15 +1,26 @@
 <?php
-
 $ADMIN_PASSWORD = '202480035augi'; 
 $SUPABASE_URL   = 'https://kkwgodtsatrmnvssojxt.supabase.co';
-$SUPABASE_KEY   = $_ENV['SUPABASE_SECRET_KEY'] ?? getenv('SUPABASE_SECRET_KEY') ?: '';
+$SUPABASE_KEY   = $_ENV['SUPABASE_SECRET_KEY'] ?? $_SERVER['SUPABASE_SECRET_KEY'] ?? getenv('SUPABASE_SECRET_KEY') ?: '';
 
 $authToken = hash('sha256', $ADMIN_PASSWORD . $SUPABASE_URL);
 $message = '';
 $error = '';
 
+function supabaseRequest(string $url, string $method, string $apiKey, array $extraHeaders = []): array {
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array_merge([
+        "apikey: $apiKey",
+        "Authorization: Bearer $apiKey"
+    ], $extraHeaders));
+    $body = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    return [$code, $body];
+}
 
-// 2. ADMIN LOGIN UI
+// LOGIN AND UI
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'login') {
@@ -35,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 $isLoggedIn = (($_COOKIE['gamehub_admin'] ?? '') === $authToken);
 
 // ==========================================
-// 3. DELETE PROFILE HANDLER (CRUD: DELETE)
+// 3. DELETE PROFILE HANDLER (WITH AUTO-CASCADE)
 // ==========================================
 if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_user') {
     $col   = $_POST['del_col'] ?? 'username';
@@ -44,21 +55,63 @@ if ($isLoggedIn && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ??
 
     if ($val !== '' && in_array($col, ['id', 'username'], true)) {
         $delUrl = $SUPABASE_URL . '/rest/v1/profiles?' . $col . '=eq.' . urlencode($val);
-        $ch = curl_init($delUrl);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "apikey: $SUPABASE_KEY",
-            "Authorization: Bearer $SUPABASE_KEY"
+        [$httpCode, $delResponse] = supabaseRequest($delUrl, 'DELETE', $SUPABASE_KEY, [
+            "Prefer: return=representation"
         ]);
-        curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+
+        // If HTTP 409 (Foreign Key Conflict), clean up linked child tables and retry
+        $attempts = 0;
+        while ($httpCode === 409 && $attempts < 6) {
+            $attempts++;
+            $errJson = json_decode($delResponse, true) ?? [];
+            $details = $errJson['details'] ?? '';
+            $msg     = $errJson['message'] ?? '';
+
+            $childTable = '';
+            if (preg_match('/referenced from table "([a-zA-Z0-9_]+)"/', $details, $m)) {
+                $childTable = $m[1];
+            } elseif (preg_match('/on table "([a-zA-Z0-9_]+)"/', $msg, $m)) {
+                $childTable = $m[1];
+            }
+
+            if ($childTable === '' || $childTable === 'profiles') {
+                break;
+            }
+
+            $refCol = $col;
+            $refVal = $val;
+            if (preg_match('/Key \(([a-zA-Z0-9_]+)\)=\(([^)]+)\)/', $details, $km)) {
+                $refCol = $km[1];
+                $refVal = $km[2];
+            }
+
+            $candidateFkCols = ($refCol === 'username')
+                ? ['username', 'player_username', 'user_id', 'player_id']
+                : ['user_id', 'player_id', 'profile_id', 'owner_id', 'id'];
+
+            foreach ($candidateFkCols as $fkCol) {
+                $childDelUrl = $SUPABASE_URL . '/rest/v1/' . $childTable . '?' . $fkCol . '=eq.' . urlencode($refVal);
+                supabaseRequest($childDelUrl, 'DELETE', $SUPABASE_KEY);
+            }
+
+            // Retry deleting the main profile
+            [$httpCode, $delResponse] = supabaseRequest($delUrl, 'DELETE', $SUPABASE_KEY, [
+                "Prefer: return=representation"
+            ]);
+        }
 
         if ($httpCode >= 200 && $httpCode < 300) {
-            $message = "Deleted profile: " . htmlspecialchars($label);
+            $deletedRows = json_decode($delResponse, true);
+            if (!empty($deletedRows)) {
+                $message = "Deleted profile: " . htmlspecialchars($label);
+            } else {
+                $error = "0 rows deleted. Make sure SUPABASE_SECRET_KEY is saved in Vercel Environment Variables.";
+            }
         } else {
-            $error = "Delete failed (HTTP $httpCode). Make sure you used your Supabase service_role secret key.";
+            $errDetails = json_decode($delResponse, true);
+            $reason = $errDetails['message'] ?? "HTTP $httpCode";
+            $extra  = !empty($errDetails['details']) ? " (" . $errDetails['details'] . ")" : "";
+            $error  = "Delete failed: " . htmlspecialchars($reason . $extra);
         }
     }
 }
@@ -75,23 +128,13 @@ if ($isLoggedIn) {
     $startTime = microtime(true);
     $fetchUrl  = $SUPABASE_URL . '/rest/v1/profiles?select=*';
 
-    $ch = curl_init($fetchUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "apikey: $SUPABASE_KEY",
-        "Authorization: Bearer $SUPABASE_KEY"
-    ]);
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
+    [$httpCode, $response] = supabaseRequest($fetchUrl, 'GET', $SUPABASE_KEY);
     $pingMs = round((microtime(true) - $startTime) * 1000);
 
     if ($httpCode === 200) {
         $dbStatus = 'ONLINE';
         $players  = json_decode($response, true) ?? [];
 
-        // Automatically detect whatever columns your profiles table has
         if (!empty($players)) {
             foreach (array_keys($players[0]) as $colName) {
                 if ($colName !== 'id') {
@@ -100,7 +143,7 @@ if ($isLoggedIn) {
             }
         }
     } else {
-        $error = "Database connection failed (HTTP $httpCode). Check your Supabase key in admin.php.";
+        $error = "Database connection failed (HTTP $httpCode). Check SUPABASE_SECRET_KEY in Vercel.";
     }
 }
 ?>
@@ -212,7 +255,7 @@ if ($isLoggedIn) {
                                     <td><?= htmlspecialchars((string)$cell) ?></td>
                                 <?php endforeach; ?>
                                 <td>
-                                    <form method="POST" onsubmit="return confirm('Delete this profile permanently?');">
+                                    <form method="POST" onsubmit="return confirm('Delete this profile and all its game data permanently?');">
                                         <input type="hidden" name="action" value="delete_user">
                                         <input type="hidden" name="del_col" value="<?= htmlspecialchars($delCol) ?>">
                                         <input type="hidden" name="del_val" value="<?= htmlspecialchars((string)$delVal) ?>">
