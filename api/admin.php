@@ -2,7 +2,7 @@
 
 $ADMIN_PASSWORD = '202480035augi'; 
 $SUPABASE_URL   = 'https://kkwgodtsatrmnvssojxt.supabase.co';
-$SUPABASE_KEY   = 'sb_publishable_h9RjSCZ_8sHwA0RNhp3GOw_kxdoT_gn';
+$SUPABASE_KEY   = $_ENV['SUPABASE_SECRET_KEY'] ?? getenv('SUPABASE_SECRET_KEY') ?: '';
 
 $authToken = hash('sha256', $ADMIN_PASSWORD . $SUPABASE_URL);
 $message = '';
