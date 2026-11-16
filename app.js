@@ -22,6 +22,23 @@ try {
 // Icon names come from icons.js
 // ==========================================
 const SAVED_NAME_KEY = "gamehub_username";
+const DEVICE_KEY = "gamehub_device";
+let memoryDeviceId = null;
+
+// Random id stored on this phone; it "owns" the profile created here
+function getDeviceId() {
+    try {
+        let id = localStorage.getItem(DEVICE_KEY);
+        if (!id) {
+            id = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+            localStorage.setItem(DEVICE_KEY, id);
+        }
+        return id;
+    } catch (e) {
+        memoryDeviceId = memoryDeviceId || Math.random().toString(36).slice(2);
+        return memoryDeviceId;
+    }
+}
 const MAX_BADGES = 3; // how many badges a player can show at once
 
 // gain(ctx) = how much progress a finished game adds.
@@ -258,10 +275,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         showFatal("Startup error: " + err.message);
     }
 
-    if (savedName && db) {
+    if (db) {
         try {
-            const ok = await loginPlayer(savedName, true);
-            if (!ok) showWelcomeModal();
+            // No saved name (site data cleared)? This phone's id still finds its account
+            if (!savedName) savedName = await findDeviceAccount();
+            if (savedName) {
+                const ok = await loginPlayer(savedName, true);
+                if (!ok) showWelcomeModal();
+            }
         } catch (err) {
             console.error(err);
             showWelcomeModal();
@@ -279,15 +300,36 @@ async function loginPlayer(username, silent = false) {
     }
 
     try {
+        const deviceId = getDeviceId();
         const { data: existing, error: selErr } = await db
-            .from("profiles").select("*").eq("username", username).maybeSingle();
+            .from("profiles").select("*").ilike("username", username).maybeSingle();
         if (selErr) throw selErr;
 
         let profile = existing;
-        if (!profile) {
+        if (profile) {
+            if (profile.device_id && profile.device_id !== deviceId) {
+                if (!silent) showNotification("Name already taken!", "error");
+                return false;
+            }
+            if (!profile.device_id) {
+                // Old profile from before device ids: only the phone that had it saved can claim it
+                if (!silent) {
+                    showNotification("Name already taken!", "error");
+                    return false;
+                }
+                const { error: claimErr } = await db.from("profiles").update({ device_id: deviceId }).eq("id", profile.id);
+                if (claimErr) throw claimErr;
+            }
+        } else {
             const { data: created, error: insErr } = await db
-                .from("profiles").insert([{ username: username }]).select().single();
-            if (insErr) throw insErr;
+                .from("profiles").insert([{ username: username, device_id: deviceId }]).select().single();
+            if (insErr) {
+                if (insErr.code === "23505") {
+                    if (!silent) showNotification("Name already taken!", "error");
+                    return false;
+                }
+                throw insErr;
+            }
             profile = created;
         }
 
@@ -327,20 +369,27 @@ async function loginPlayer(username, silent = false) {
     }
 }
 
+async function findDeviceAccount() {
+    const { data } = await db.from("profiles").select("username").eq("device_id", getDeviceId()).limit(1);
+    return data && data.length ? data[0].username : null;
+}
+
 async function registerNewPlayer() {
     const usernameInput = document.getElementById("username-input");
-    if (!usernameInput) return;
+    if (!usernameInput || !db) return;
     const username = usernameInput.value.trim();
-    if (!username) {
-        showNotification("Please enter a username!", "error");
+    if (!/^[a-zA-Z0-9]+$/.test(username)) {
+        showNotification("Use only letters a-z and numbers!", "error");
+        return;
+    }
+    // One account per phone: if this phone already has one, log into it
+    const mine = await findDeviceAccount();
+    if (mine && mine.toLowerCase() !== username.toLowerCase()) {
+        showNotification(`This phone already has the account "${mine}".`, "error");
+        await loginPlayer(mine, true);
         return;
     }
     await loginPlayer(username);
-}
-
-function switchPlayer() {
-    try { localStorage.removeItem(SAVED_NAME_KEY); } catch (e) {}
-    location.reload();
 }
 
 async function loadAchievements() {
